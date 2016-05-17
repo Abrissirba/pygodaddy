@@ -97,17 +97,11 @@ class GoDaddyClient(object):
         :returns:  `True` if login is successful, else `False`
         """
         r = self.session.get(self.default_url)
-        try:
-            viewstate = re.compile(r'id="__VIEWSTATE" value="([^"]+)"').search(r.text).group(1)
-        except:
-            logger.exception('Login routine broken, godaddy may have updated their login mechanism')
-            return False
         data = {
-                'Login$userEntryPanel2$LoginImageButton.x' : 0,
-                'Login$userEntryPanel2$LoginImageButton.y' : 0,
-                'Login$userEntryPanel2$UsernameTextBox' : username,
-                'Login$userEntryPanel2$PasswordTextBox' : password,
-                '__VIEWSTATE': viewstate,
+                'app' : 'idp',
+                'realm' : 'idp',
+                'name': username,
+                'password' : password,
         }
         r = self.session.post(r.url, data=data)
         return self.is_loggedin(r.text)
@@ -146,6 +140,7 @@ class GoDaddyClient(object):
         :param new: if `True`, will create a new record if necessary, default to `True`
         :returns: `True` if update is successful, else `False`
         """
+
         if record_type != 'A':
             raise NotImplementedError('Only A Record Update is supported for now')
 
@@ -154,14 +149,13 @@ class GoDaddyClient(object):
         records = list(self.find_dns_records(domain, record_type))
         for record in records:
             if record.hostname == prefix:
-                if record.value != value:
-                    if not self._edit_record(value=value, index=record.index, record_type=record_type):
-                        return False
-                    time.sleep(1) # godaddy seems to reject the save if there isn't a pause here
-                    if not self._save_records(domain=domain, index=record.index, record_type=record_type):
-                        return False
-                    return True
-                logger.info('Update was not required.')
+                #if record.value != value:
+                if not self._edit_record(value=value, index=record.index, record_type=record_type):
+                    return False
+                time.sleep(1) # godaddy seems to reject the save if there isn't a pause here
+                if not self._save_records(domain=domain, index=record.index, record_type=record_type):
+                    return False
+                return True
                 break
         else:
             # record.hostname == prefix not found
@@ -216,6 +210,7 @@ class GoDaddyClient(object):
         r = self.session.post(self.zonefile_ws_url + '/Flag{rt}RecForDeletion'.format(rt=record_type), data=data)
         if not 'SUCCESS' in r.text:
             logger.error('Failed to delete record, has the website changed?')
+            raise ValueError(r.text)
             return False
         return True
 
@@ -225,6 +220,7 @@ class GoDaddyClient(object):
         r = self.session.post(self.zonefile_ws_url + '/AddNew{rt}Record'.format(rt=record_type), data=data)
         if not 'SUCCESS' in r.text:
             logger.error('Failed to add record, has the website changed?')
+            raise ValueError(r.text)
             return False
         return True
 
@@ -234,6 +230,7 @@ class GoDaddyClient(object):
         r = self.session.post(self.zonefile_ws_url + '/EditRecordField', data=data)
         if not 'SUCCESS' in r.text:
             logger.error('Failed to edit record, has the website changed?')
+            raise ValueError(r.text)
             return False
         return True
 
@@ -252,6 +249,7 @@ class GoDaddyClient(object):
         r = self.session.post(self.zonefile_ws_url + '/SaveRecords', data=data)
         if not 'SUCCESS' in r.text:
             logger.error('Failed to save records, has the website changed?')
+            raise ValueError(r.text)
             return False
         return True
 
