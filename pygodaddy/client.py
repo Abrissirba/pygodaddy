@@ -149,13 +149,13 @@ class GoDaddyClient(object):
         records = list(self.find_dns_records(domain, record_type))
         for record in records:
             if record.hostname == prefix:
-                #if record.value != value:
-                if not self._edit_record(value=value, index=record.index, record_type=record_type):
-                    return False
-                time.sleep(1) # godaddy seems to reject the save if there isn't a pause here
-                if not self._save_records(domain=domain, index=record.index, record_type=record_type):
-                    return False
-                return True
+                if record.value != value:
+                    if not self._edit_record(value=value, index=record.index, record_type=record_type):
+                        return False
+                    time.sleep(1) # godaddy seems to reject the save if there isn't a pause here
+                    if not self._save_records(domain=domain, index=record.index, record_type=record_type):
+                        return False
+                    return True
                 break
         else:
             # record.hostname == prefix not found
